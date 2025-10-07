@@ -1,116 +1,89 @@
-from flask import Flask, render_template, request, redirect, url_for, jsonify, session
-import psycopg2
-import psycopg2.extras
+from flask import Flask, render_template, request
+from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.secret_key = "clave_super_secreta"
 
-# -------------------------------------------------
-# 🔗 CONEXIÓN A POSTGRES EN RENDER
-# -------------------------------------------------
-def get_connection():
-    return psycopg2.connect(
-        host=os.environ.get("DB_HOST"),
-        database=os.environ.get("DB_NAME"),
-        user=os.environ.get("DB_USER"),
-        password=os.environ.get("DB_PASSWORD"),
-        port=os.environ.get("DB_PORT", 5432)
-    )
+# -------------------------------
+# 🔧 CONFIGURACIÓN DE BASE DE DATOS
+# -------------------------------
+db_url = os.environ.get("DATABASE_URL")
 
-# -------------------------------------------------
-# 🔐 LOGIN
-# -------------------------------------------------
-@app.route("/", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        usuario = request.form["usuario"]
-        password = request.form["password"]
+# Render usa postgres://, pero SQLAlchemy requiere postgresql://
+if db_url and db_url.startswith("postgres://"):
+    db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-        if usuario == "admin" and password == "1234":
-            session["usuario"] = usuario
-            return redirect(url_for("admin"))
-        else:
-            return render_template("login.html", error="Usuario o contraseña incorrectos")
+# Base local si no hay base en línea
+app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:///pedidos_local.db"
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
-    return render_template("login.html")
+db = SQLAlchemy(app)
 
-# -------------------------------------------------
-# 🏠 MENÚ PÚBLICO
-# -------------------------------------------------
+# -------------------------------
+# 🧾 MODELO DE LA TABLA PEDIDOS
+# -------------------------------
+class Pedido(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nombre = db.Column(db.String(100), nullable=False)
+    telefono = db.Column(db.String(20))
+    pedido = db.Column(db.Text, nullable=False)
+    total = db.Column(db.Float, nullable=False)
+    fecha = db.Column(db.DateTime, default=db.func.current_timestamp())
+
+# Crear tabla automáticamente
+with app.app_context():
+    db.create_all()
+
+# -------------------------------
+# 🌐 RUTAS PRINCIPALES
+# -------------------------------
+@app.route("/")
+def index():
+    return render_template("index.html")
+
 @app.route("/menu")
 def menu():
     return render_template("menu.html")
 
-# -------------------------------------------------
-# 💾 GUARDAR PEDIDO EN BASE DE DATOS
-# -------------------------------------------------
 @app.route("/hacer_pedido", methods=["POST"])
 def hacer_pedido():
-    nombre = request.form.get("nombre")
-    telefono = request.form.get("telefono", "")
-    pedido = request.form.get("pedido")
-    total = request.form.get("total")
-
-    if not nombre or not pedido or not total:
-        return jsonify({"error": "Datos incompletos"}), 400
-
     try:
-        conn = get_connection()
-        cur = conn.cursor()
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS pedidos (
-                id SERIAL PRIMARY KEY,
-                cliente VARCHAR(100),
-                telefono VARCHAR(20),
-                pedido TEXT,
-                total NUMERIC,
-                fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
-        cur.execute(
-            "INSERT INTO pedidos (cliente, telefono, pedido, total) VALUES (%s, %s, %s, %s)",
-            (nombre, telefono, pedido, total)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-        return render_template("menu.html", mensaje="✅ Pedido enviado con éxito. ¡Gracias por tu compra!")
-    except Exception as e:
-        print("Error guardando pedido:", e)
-        return render_template("menu.html", error="❌ Hubo un error al enviar tu pedido, intenta de nuevo.")
+        nombre = request.form.get("nombre", "").strip()
+        telefono = request.form.get("telefono", "").strip()
+        pedido = request.form.get("pedido", "").strip()
+        total = request.form.get("total", "").strip()
 
-# -------------------------------------------------
-# 🧾 PANEL ADMIN
-# -------------------------------------------------
+        if not nombre or not pedido or not total:
+            return render_template("error.html", mensaje="❌ Por favor completa todos los campos."), 400
+
+        nuevo_pedido = Pedido(
+            nombre=nombre,
+            telefono=telefono,
+            pedido=pedido,
+            total=float(total)
+        )
+        db.session.add(nuevo_pedido)
+        db.session.commit()
+
+        return render_template("gracias.html", total=total)
+
+    except Exception as e:
+        print("❌ Error al procesar pedido:", e)
+        return render_template("error.html", mensaje="Ocurrió un error. Intenta de nuevo."), 500
+
+@app.route("/gracias")
+def gracias():
+    return render_template("gracias.html")
+
 @app.route("/admin")
 def admin():
-    if "usuario" not in session:
-        return redirect(url_for("login"))
+    pedidos = Pedido.query.order_by(Pedido.fecha.desc()).all()
+    total_general = sum(p.total for p in pedidos)
+    return render_template("admin.html", pedidos=pedidos, total_general=total_general)
 
-    try:
-        conn = get_connection()
-        cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
-        cur.execute("SELECT * FROM pedidos ORDER BY fecha DESC")
-        pedidos = cur.fetchall()
-        cur.close()
-        conn.close()
-    except Exception as e:
-        print("Error cargando pedidos:", e)
-        pedidos = []
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template("error.html", mensaje="Página no encontrada"), 404
 
-    return render_template("admin.html", pedidos=pedidos)
-
-# -------------------------------------------------
-# 🚪 CERRAR SESIÓN
-# -------------------------------------------------
-@app.route("/logout")
-def logout():
-    session.pop("usuario", None)
-    return redirect(url_for("login"))
-
-# -------------------------------------------------
-# 🚀 INICIO DEL SERVIDOR
-# -------------------------------------------------
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=True)
