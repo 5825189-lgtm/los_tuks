@@ -39,7 +39,6 @@ with app.app_context():
 # -------------------------------
 # 🌐 Rutas principales
 # -------------------------------
-
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -51,19 +50,37 @@ def menu():
 @app.route("/hacer_pedido", methods=["POST"])
 def hacer_pedido():
     try:
-        nombre = request.form["nombre"]
-        telefono = request.form.get("telefono", "")
-        pedido = request.form["pedido"]
-        total = request.form["total"]
+        # ✅ Usamos .get() para evitar errores Bad Request
+        nombre = request.form.get("nombre", "").strip()
+        telefono = request.form.get("telefono", "").strip()
+        pedido = request.form.get("pedido", "").strip()
+        total = request.form.get("total", "").strip()
 
-        nuevo_pedido = Pedido(nombre=nombre, telefono=telefono, pedido=pedido, total=float(total))
+        # ✅ Validación: campos obligatorios
+        if not nombre or not pedido or not total:
+            print("❌ Faltan datos en el formulario")
+            return render_template(
+                "error.html",
+                mensaje="Por favor completa tu pedido antes de enviarlo."
+            ), 400
+
+        nuevo_pedido = Pedido(
+            nombre=nombre,
+            telefono=telefono,
+            pedido=pedido,
+            total=float(total)
+        )
         db.session.add(nuevo_pedido)
         db.session.commit()
 
         return render_template("gracias.html", total=total)
+
     except Exception as e:
         print("❌ Error al procesar pedido:", e)
-        return "Error al procesar el pedido", 400
+        return render_template(
+            "error.html",
+            mensaje="Ocurrió un problema al procesar tu pedido. Intenta de nuevo."
+        ), 400
 
 @app.route("/gracias")
 def gracias():
