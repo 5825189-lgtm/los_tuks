@@ -6,50 +6,31 @@
     <title>Gracias por tu pedido</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
-            background-image: url('/static/tuks-img.png');
-            background-size: cover;
-            background-position: center;
             text-align: center;
-            color: #fff;
+            background-image: url("/static/tuks-img.png");
+            background-size: cover;
+            background-repeat: no-repeat;
+            font-family: 'Segoe UI', sans-serif;
         }
 
-        .panel {
-            background-color: rgba(0, 0, 0, 0.6);
-            padding: 30px;
+        .mensaje {
+            background: rgba(255, 255, 255, 0.9);
             border-radius: 15px;
-            display: inline-block;
-            margin-top: 100px;
+            padding: 30px;
+            margin: 10% auto;
+            width: 60%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
         }
 
-        h1 {
-            color: gold;
-        }
-
-        a {
-            color: white;
-            text-decoration: none;
-            background-color: gold;
-            padding: 10px 20px;
-            border-radius: 10px;
-            display: inline-block;
-            margin-top: 20px;
-        }
-
-        a:hover {
-            background-color: orange;
-        }
+        h1 { color: #000; }
     </style>
 </head>
 <body>
-
-    <div class="panel">
-        <h1>¡Gracias, {{ nombre }}!</h1>
-        <p>Tu pedido ha sido recibido exitosamente.</p>
-        <h2>Total: ${{ "%.2f"|format(total) }}</h2>
-        <p>En breve estaremos preparándolo con mucho sabor 😋</p>
-        <a href="{{ url_for('menu') }}">Hacer otro pedido</a>
+    <div class="mensaje">
+        <h1>¡Gracias por tu pedido! 🥰</h1>
+        <p>Tu orden fue enviada exitosamente.</p>
+        <p><strong>Total del pedido:</strong> ${{ total }}</p>
+        <a href="/menu"><button>Hacer otro pedido</button></a>
     </div>
-
 </body>
 </html>
