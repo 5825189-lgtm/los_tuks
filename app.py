@@ -1,9 +1,8 @@
-from flask import Flask, render_template, request, redirect, url_for, session
+from flask import Flask, render_template, request, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 import os
 
 app = Flask(__name__)
-app.secret_key = "tuks_secret_key"  # Necesario para usar 'session'
 
 # -------------------------------
 # 🔧 Configuración de la Base de Datos
@@ -27,9 +26,10 @@ class Pedido(db.Model):
     telefono = db.Column(db.String(20))
     pedido = db.Column(db.Text, nullable=False)
     total = db.Column(db.Float, nullable=False)
+    fecha = db.Column(db.DateTime, server_default=db.func.now())
 
 # -------------------------------
-# 🧠 Crear la tabla (Flask 3.x)
+# 🧠 Crear la tabla automáticamente
 # -------------------------------
 with app.app_context():
     db.create_all()
@@ -40,42 +40,47 @@ with app.app_context():
 
 @app.route("/")
 def index():
-    return render_template("index.html")  # Página principal
+    return render_template("index.html")
 
 @app.route("/menu")
 def menu():
-    return render_template("menu.html")  # Página del menú
+    return render_template("menu.html")
 
 @app.route("/hacer_pedido", methods=["POST"])
 def hacer_pedido():
     nombre = request.form.get("nombre")
     telefono = request.form.get("telefono", "")
     pedido = request.form.get("pedido")
-    total = float(request.form.get("total", 0))
+    total = request.form.get("total")
+
+    # Validar datos antes de guardar
+    if not nombre or not pedido or not total:
+        return "Error: faltan datos en el formulario", 400
+
+    try:
+        total = float(total)
+    except ValueError:
+        total = 0.0
 
     nuevo_pedido = Pedido(nombre=nombre, telefono=telefono, pedido=pedido, total=total)
     db.session.add(nuevo_pedido)
     db.session.commit()
 
-    # Guarda los datos del pedido en sesión para mostrar en la página de gracias
-    session["nombre"] = nombre
-    session["total"] = total
-
-    return redirect(url_for("gracias"))
+    return redirect(url_for("gracias", total=total))
 
 @app.route("/gracias")
 def gracias():
-    nombre = session.get("nombre", "Cliente")
-    total = session.get("total", 0)
-    return render_template("gracias.html", nombre=nombre, total=total)
+    total = request.args.get("total", 0)
+    return render_template("gracias.html", total=total)
 
 @app.route("/admin")
 def admin():
-    pedidos = Pedido.query.order_by(Pedido.id.desc()).all()
-    return render_template("admin.html", pedidos=pedidos)
+    pedidos = Pedido.query.all()
+    total_general = sum(p.total for p in pedidos) if pedidos else 0
+    return render_template("admin.html", pedidos=pedidos, total_general=total_general)
 
 # -------------------------------
-# 🚀 Ejecutar aplicación (modo local)
+# 🚀 Ejecutar aplicación en local
 # -------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
