@@ -8,10 +8,12 @@ app = Flask(__name__)
 # 🔧 Configuración de la Base de Datos
 # -------------------------------
 db_url = os.environ.get("DATABASE_URL")  # Render usará esta variable automáticamente
+
+# 🔄 Ajuste necesario para Render (Postgres)
 if db_url and db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# Si estás en local, usa SQLite
+# Base local si no hay base en línea
 app.config["SQLALCHEMY_DATABASE_URI"] = db_url or "sqlite:///pedidos_local.db"
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
@@ -23,19 +25,21 @@ db = SQLAlchemy(app)
 class Pedido(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     nombre = db.Column(db.String(100), nullable=False)
-    pupusa = db.Column(db.String(100), nullable=False)
-    cantidad = db.Column(db.Integer, nullable=False)
+    telefono = db.Column(db.String(20))
+    pedido = db.Column(db.Text, nullable=False)
     total = db.Column(db.Float, nullable=False)
+    fecha = db.Column(db.DateTime, default=db.func.current_timestamp())
 
 # -------------------------------
-# 🧠 Crear la tabla si no existe
+# 🧠 Crear la tabla (Flask 3.x compatible)
 # -------------------------------
 with app.app_context():
     db.create_all()
 
 # -------------------------------
-# 🌐 Rutas de la aplicación
+# 🌐 Rutas principales
 # -------------------------------
+
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -46,37 +50,33 @@ def menu():
 
 @app.route("/hacer_pedido", methods=["POST"])
 def hacer_pedido():
-    nombre = request.form["nombre"]
-    pupusa = request.form["pupusa"]
-    cantidad = int(request.form["cantidad"])
+    try:
+        nombre = request.form["nombre"]
+        telefono = request.form.get("telefono", "")
+        pedido = request.form["pedido"]
+        total = request.form["total"]
 
-    # 💵 Precios según tipo de pupusa
-    precios = {
-        "Frijol con queso": 0.35,
-        "Revueltas": 0.35,
-        "Especialidad de la casa": 0.60
-    }
+        nuevo_pedido = Pedido(nombre=nombre, telefono=telefono, pedido=pedido, total=float(total))
+        db.session.add(nuevo_pedido)
+        db.session.commit()
 
-    total = precios.get(pupusa, 0) * cantidad
-
-    nuevo_pedido = Pedido(nombre=nombre, pupusa=pupusa, cantidad=cantidad, total=total)
-    db.session.add(nuevo_pedido)
-    db.session.commit()
-
-    return render_template("gracias.html", total=total)
+        return render_template("gracias.html", total=total)
+    except Exception as e:
+        print("❌ Error al procesar pedido:", e)
+        return "Error al procesar el pedido", 400
 
 @app.route("/gracias")
 def gracias():
-    return render_template("gracias.html", total=0)
+    return render_template("gracias.html")
 
 @app.route("/admin")
 def admin():
-    pedidos = Pedido.query.all()
+    pedidos = Pedido.query.order_by(Pedido.fecha.desc()).all()
     total_general = sum(p.total for p in pedidos)
     return render_template("admin.html", pedidos=pedidos, total_general=total_general)
 
 # -------------------------------
-# 🚀 Ejecutar en local
+# 🚀 Ejecutar aplicación (modo local)
 # -------------------------------
 if __name__ == "__main__":
     app.run(debug=True)
