@@ -1,127 +1,56 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Las Tuks - Menú</title>
+    <title>Menú - Pupusería Los Tuks</title>
     <style>
         body {
-            background: url("{{ url_for('static', filename='tuks-img.png') }}") no-repeat center center fixed;
+            background: url('/static/tuks-img.png') no-repeat center center fixed;
             background-size: cover;
-            font-family: 'Poppins', sans-serif;
+            color: white;
+            font-family: Arial, sans-serif;
             text-align: center;
-            color: #222;
+            padding-top: 50px;
         }
-        .card {
-            background: rgba(255, 255, 240, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            padding: 20px;
-            margin: 15px;
+        .menu-container {
+            background-color: rgba(0, 0, 0, 0.7);
+            display: inline-block;
+            padding: 30px;
+            border-radius: 20px;
         }
-        .container {
-            display: flex;
-            justify-content: center;
-            flex-wrap: wrap;
-            gap: 20px;
+        select, input, button {
+            padding: 10px;
+            margin: 10px;
+            border-radius: 10px;
+            border: none;
         }
         button {
-            background-color: #f2c200;
-            border: none;
-            border-radius: 10px;
-            padding: 8px 14px;
-            cursor: pointer;
+            background-color: #ffae00;
+            color: black;
             font-weight: bold;
+            cursor: pointer;
         }
         button:hover {
-            background-color: #ffda4a;
-        }
-        input {
-            padding: 8px;
-            border-radius: 5px;
-            border: 1px solid #aaa;
-            margin: 5px;
+            background-color: #ffc94d;
         }
     </style>
 </head>
 <body>
-    <h1>Las Tuks</h1>
-    <p><em>Sabor que une generaciones</em></p>
-
-    <div class="container">
-        <div class="card">
-            <h3>Frijol con Queso</h3>
-            <p>$1.50</p>
-            <button onclick="modificar('frijol', -1)">-</button>
-            <span id="frijol">0</span>
-            <button onclick="modificar('frijol', 1)">+</button>
-        </div>
-
-        <div class="card">
-            <h3>Revueltas</h3>
-            <p>$1.75</p>
-            <button onclick="modificar('revueltas', -1)">-</button>
-            <span id="revueltas">0</span>
-            <button onclick="modificar('revueltas', 1)">+</button>
-        </div>
-
-        <div class="card">
-            <h3>Especialidad de la casa</h3>
-            <p>$2.00</p>
-            <button onclick="modificar('especial', -1)">-</button>
-            <span id="especial">0</span>
-            <button onclick="modificar('especial', 1)">+</button>
-        </div>
-    </div>
-
-    <div class="card">
-        <h3>Tu pedido</h3>
-        <p id="resumen">No hay pupusas seleccionadas.</p>
-        <p><strong>Total: $<span id="total">0.00</span></strong></p>
-
-        <form action="/realizar_pedido" method="POST" onsubmit="return enviarPedido()">
-            <input type="hidden" name="pedido" id="pedido">
-            <input type="hidden" name="total" id="totalInput">
-            <input type="text" name="nombre" placeholder="Nombre" required>
-            <input type="text" name="telefono" placeholder="Teléfono (opcional)">
-            <br><br>
-            <button type="submit">Realizar pedido</button>
+    <div class="menu-container">
+        <h1>Menú de Pupusas</h1>
+        <p>Motivados por el sabor, servimos lo mejor 🌮🔥</p>
+        <form action="/hacer_pedido" method="POST">
+            <input type="text" name="nombre" placeholder="Tu nombre" required><br>
+            <input type="text" name="telefono" placeholder="Tu teléfono" required><br>
+            <input type="text" name="direccion" placeholder="Tu dirección" required><br>
+            <select name="tipo_pupusa" required>
+                <option value="">Selecciona tu pupusa</option>
+                <option value="Frijol con queso">Frijol con queso</option>
+                <option value="Revueltas">Revueltas</option>
+                <option value="Especialidad de la casa">Especialidad de la casa</option>
+            </select><br>
+            <input type="number" name="cantidad" min="1" placeholder="Cantidad" required><br>
+            <button type="submit">Enviar pedido</button>
         </form>
     </div>
-
-    <footer>
-        <p>© Las Tuks — Pupusas artesanales</p>
-    </footer>
-
-    <script>
-        const precios = { frijol: 1.5, revueltas: 1.75, especial: 2.0 };
-        const cantidades = { frijol: 0, revueltas: 0, especial: 0 };
-
-        function modificar(tipo, cambio) {
-            cantidades[tipo] = Math.max(0, cantidades[tipo] + cambio);
-            document.getElementById(tipo).textContent = cantidades[tipo];
-            actualizarPedido();
-        }
-
-        function actualizarPedido() {
-            let resumen = [];
-            let total = 0;
-            for (let k in cantidades) {
-                if (cantidades[k] > 0) {
-                    resumen.push(`${cantidades[k]} ${k}`);
-                    total += cantidades[k] * precios[k];
-                }
-            }
-            document.getElementById("resumen").textContent = resumen.length ? resumen.join(", ") : "No hay pupusas seleccionadas.";
-            document.getElementById("total").textContent = total.toFixed(2);
-        }
-
-        function enviarPedido() {
-            const resumen = document.getElementById("resumen").textContent;
-            const total = document.getElementById("total").textContent;
-            document.getElementById("pedido").value = resumen;
-            document.getElementById("totalInput").value = total;
-            return true;
-        }
-    </script>
 </body>
 </html>

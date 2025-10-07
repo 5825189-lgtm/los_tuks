@@ -1,58 +1,52 @@
 <!DOCTYPE html>
-<html lang="es">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Admin - Las Tuks</title>
+    <title>Panel de Administración</title>
     <style>
         body {
-            background: url("{{ url_for('static', filename='tuks-img.png') }}") no-repeat center center fixed;
+            background: url('/static/tuks-img.png') no-repeat center center fixed;
             background-size: cover;
-            font-family: 'Poppins', sans-serif;
+            color: white;
+            font-family: Arial, sans-serif;
             text-align: center;
         }
-        .card {
-            background: rgba(255, 255, 240, 0.95);
-            border-radius: 15px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-            padding: 20px;
-            margin: 15px auto;
-            max-width: 400px;
+        table {
+            width: 90%;
+            margin: 50px auto;
+            border-collapse: collapse;
+            background-color: rgba(0, 0, 0, 0.7);
         }
-        .container {
-            display: flex;
-            flex-wrap: wrap;
-            justify-content: center;
+        th, td {
+            border: 1px solid white;
+            padding: 10px;
         }
-        a {
+        th {
+            background-color: #ffae00;
             color: black;
-            font-weight: bold;
-            text-decoration: none;
-            background: #f2c200;
-            padding: 8px 15px;
-            border-radius: 10px;
-            display: inline-block;
-            margin: 15px;
-        }
-        a:hover {
-            background: #ffda4a;
         }
     </style>
 </head>
 <body>
     <h1>Pedidos Recibidos</h1>
-    <a href="{{ url_for('logout') }}">Cerrar sesión</a>
-
-    <div class="container">
+    <table>
+        <tr>
+            <th>ID</th>
+            <th>Nombre</th>
+            <th>Teléfono</th>
+            <th>Dirección</th>
+            <th>Tipo Pupusa</th>
+            <th>Cantidad</th>
+        </tr>
         {% for p in pedidos %}
-        <div class="card">
-            <p><strong>Cliente:</strong> {{ p.nombre }}</p>
-            <p><strong>Teléfono:</strong> {{ p.telefono }}</p>
-            <p><strong>Pedido:</strong> {{ p.pedido }}</p>
-            <p><strong>Total:</strong> ${{ p.total }}</p>
-        </div>
-        {% else %}
-        <p>No hay pedidos todavía.</p>
+        <tr>
+            <td>{{ p.id }}</td>
+            <td>{{ p.nombre }}</td>
+            <td>{{ p.telefono }}</td>
+            <td>{{ p.direccion }}</td>
+            <td>{{ p.tipo_pupusa }}</td>
+            <td>{{ p.cantidad }}</td>
+        </tr>
         {% endfor %}
-    </div>
+    </table>
 </body>
 </html>
