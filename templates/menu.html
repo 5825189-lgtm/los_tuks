@@ -112,6 +112,37 @@
                 <button onclick="cambiarCantidad(this, 1)">+</button>
             </div>
         </div>
+
+        <!-- NUEVAS PUPUSAS -->
+        <div class="item" data-nombre="Ayote" data-precio="0.35">
+            <h3>Ayote</h3>
+            <p>$0.35</p>
+            <div class="contador">
+                <button onclick="cambiarCantidad(this, -1)">-</button>
+                <span class="cantidad">0</span>
+                <button onclick="cambiarCantidad(this, 1)">+</button>
+            </div>
+        </div>
+
+        <div class="item" data-nombre="Chicharrón" data-precio="0.35">
+            <h3>Chicharrón</h3>
+            <p>$0.35</p>
+            <div class="contador">
+                <button onclick="cambiarCantidad(this, -1)">-</button>
+                <span class="cantidad">0</span>
+                <button onclick="cambiarCantidad(this, 1)">+</button>
+            </div>
+        </div>
+
+        <div class="item" data-nombre="Mora" data-precio="0.35">
+            <h3>Mora</h3>
+            <p>$0.35</p>
+            <div class="contador">
+                <button onclick="cambiarCantidad(this, -1)">-</button>
+                <span class="cantidad">0</span>
+                <button onclick="cambiarCantidad(this, 1)">+</button>
+            </div>
+        </div>
     </div>
 
     <form class="pedido-box" method="POST" action="/hacer_pedido" onsubmit="return enviarPedido()">
